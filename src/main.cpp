@@ -1,21 +1,26 @@
 #include "../inc/main.h"
+#include "../inc/employee.h"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <map>
 
 using namespace std;
 
 
 string dirPathShort = "./people/simple/";
 string dirPathLong = "./people/long/";
+string dirPathLongSer = "./people/longSerialized/";
 
 
-string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID\n0) EXIT"; 
-
+string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name\n8) Serialize Employees\n0) EXIT";
+map<string, Employee> IDMap;;
+map<string, Employee> lNameMap;
 
 vector<string> info;
 
-int main(void) {
+int main() {
+  indexDatabase();
   int cmd = -1;
   while (cmd != 0){
     cout << "select Command" << endl;
@@ -37,6 +42,16 @@ int main(void) {
         break;
       case 5:
         searchByID();
+        break;
+      case 6:
+        searchIDIndexbyID();
+        break;
+      case 7:
+        searchByLname();
+        break;
+      case 8:
+      serializeLong();
+      break;
       default:
         break;
     }
@@ -59,7 +74,7 @@ void addFileLong(){
         return;
     }
 
-    if (!checkFileExistLong(id)){
+    if (!checkFileExistLong(id)) {
       info.push_back(id);
       getInfo(info);
       string fileName = "people/long/" + id + ".txt";
@@ -67,6 +82,9 @@ void addFileLong(){
       output<< mkData(info);
       succsess = true;
       info.clear();
+      Employee employee(info[0], info[1], info[2], info[3]);
+      IDMap.insert({employee.getID(), employee});
+      lNameMap.insert({employee.getlName(), employee});
     } else {
       cout << "ID exists. To make changes use update function or type EXIT to cancle" << endl;
     }
@@ -89,6 +107,8 @@ void deleteFileByID(){
       string filePath = dirPathLong + id + ".txt";
       remove(filePath.c_str());
       exit = true;
+      lNameMap.erase( IDMap.at(id).getID());
+      IDMap.erase(id);
     }
   }
 }
@@ -144,6 +164,9 @@ void updateByID(){
             string fullPath = "people/long/" + id;
             ofstream output(fullPath);
             output << mkData(info);
+            IDMap.at(id).update(info[1], info[2], info[3]);
+            lNameMap.erase(info[2]);
+            lNameMap.insert({info[2], IDMap.at(id)});
             return;
           }
         }
@@ -236,3 +259,64 @@ void getInfo(vector<string>& info){
     cin >> confirm;
   }
 }
+
+void indexDatabase(){
+  for (auto& entry: filesystem::directory_iterator(dirPathLong)){
+    const auto fileName = dirPathLong + entry.path().filename().string();
+    ifstream file(fileName);
+
+    vector<string> tempInfo;
+
+    if (file.is_open()){
+      string tempStr;
+      while (!file.eof()){
+        getline(file, tempStr, ',');
+        tempInfo.push_back(tempStr);
+      }
+    }
+    file.close();
+    tempInfo[1] = tempInfo[1].substr(1);
+    tempInfo[2] = tempInfo[2].substr(1);
+    tempInfo[3] = tempInfo[3].substr(1);
+
+    Employee employee(tempInfo[0], tempInfo[1], tempInfo[2], tempInfo[3]);
+    string tempID = employee.getID();
+    IDMap.insert({tempInfo[0], employee});
+    lNameMap.insert({tempInfo[2], employee});
+  }
+}
+
+void searchIDIndexbyID() {
+  string id = getID("Enter ID to Find");
+  try {
+    cout << IDMap.at(id).toString() << endl;
+  } catch (const std::out_of_range& e) {
+    cout << "Entry Does Not Exits\n" << endl;;
+  }
+
+}
+
+void searchByLname() {
+  string lName;
+  cout << "Enter Last Name to Find" << endl;
+  cin >> lName;
+  lName = capitalize(lName);
+  try {
+    cout << lNameMap.at(lName).toString() << endl;
+  } catch (const std::out_of_range& e) {
+    cout << "Entry Does Not Exist\n" << endl;
+  }
+}
+
+void serializeLong() {
+  for (auto record : IDMap) {
+    string fileName = dirPathLongSer + record.second.getID() + ".bin";
+    ofstream file(fileName, ios::out);
+    Employee employee =  record.second;
+    file.write(reinterpret_cast<char*>(&employee), sizeof(employee));
+    file.close();
+  }
+}
+
+
+

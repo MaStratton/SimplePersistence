@@ -17,3 +17,8 @@ string getID(string output);
 bool checkFileExistLong(string checkFile);
 bool isNum(string input);
 
+void indexDatabase();
+void serializeLong();
+
+void searchIDIndexbyID();
+void searchByLname();
