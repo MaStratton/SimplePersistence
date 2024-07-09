@@ -1,4 +1,5 @@
 #pragma once
+#include "../inc/employee.h"
 #include <string>
 #include <vector>
 using namespace std;
@@ -19,6 +20,8 @@ bool isNum(string input);
 
 void indexDatabase();
 void serializeLong();
+
+void deserialize();
 
 void searchIDIndexbyID();
 void searchByLname();

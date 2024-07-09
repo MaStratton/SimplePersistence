@@ -13,11 +13,12 @@ string dirPathShort = "./people/simple/";
 string dirPathLong = "./people/long/";
 string dirPathLongSer = "./people/longSerialized/";
 
-string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name\n8) Serialize Employees\n0) EXIT";
+string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name\n8) Serialize Employees\n9) Search Serialized Files\n0) EXIT";
 map<string, Employee> IDMap;;
 map<string, Employee> lNameMap;
 
 vector<string> info;
+Employee employeeSize;
 
 int main() {
   indexDatabase();
@@ -50,8 +51,11 @@ int main() {
         searchByLname();
         break;
       case 8:
-      serializeLong();
-      break;
+        serializeLong();
+        break;
+      case 9:
+        deserialize();
+        break;
       default:
         break;
     }
@@ -346,17 +350,23 @@ void searchByLname() {
 void serializeLong() {
   auto start = chrono::high_resolution_clock::now();
   for (auto record : IDMap) {
-    string fileName = dirPathLongSer + record.second.getID() + ".bin";
-    ofstream file(fileName, ios::out);
-    Employee employee =  record.second;
-    file.write(reinterpret_cast<char*>(&employee), sizeof(employee));
-    file.close();
+    record.second.serialize();
   }
   auto finish = chrono::high_resolution_clock::now();
   auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
 
   cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+}
 
+void deserialize(){
+    auto start = chrono::high_resolution_clock::now();
+    string id = getID("Enter ID to find");
+    Employee employee = Employee::deserialize(id);
+    cout << employee.toString() << endl;
+    auto finish = chrono::high_resolution_clock::now();
+    auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
 }
 
 
