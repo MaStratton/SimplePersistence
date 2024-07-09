@@ -13,7 +13,7 @@ string dirPathShort = "./people/simple/";
 string dirPathLong = "./people/long/";
 string dirPathLongSer = "./people/longSerialized/";
 
-string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name\n8) Serialize Employees\n9) Search Serialized Files\n0) EXIT";
+string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n0) EXIT";
 map<string, Employee> IDMap;;
 map<string, Employee> lNameMap;
 
@@ -51,9 +51,12 @@ int main() {
         searchByLname();
         break;
       case 8:
-        serializeLong();
+        searchByLnameFile();
         break;
       case 9:
+        serializeLong();
+        break;
+      case 10:
         deserialize();
         break;
       default:
@@ -345,6 +348,32 @@ void searchByLname() {
   } catch (const std::out_of_range& e) {
     cout << "Entry Does Not Exist\n" << endl;
   }
+}
+
+void searchByLnameFile(){
+  string lName;
+  cout << "Enter Last Name to Find" << endl;
+  cin >> lName;
+  lName = capitalize(lName);
+  for (auto& entry: filesystem::directory_iterator(dirPathLong)){
+    const auto fileName = dirPathLong + entry.path().filename().string();
+    ifstream file(fileName);
+    if (file.is_open()){
+      string tempStr;
+      vector<string> tempInfo;
+      while (!file.eof()){
+        getline(file, tempStr, ',');
+        tempInfo.push_back(tempStr);
+      }
+      string templName = tempInfo[2].substr(1);
+      if (lName == templName){
+        cout << mkString(tempInfo) << endl;
+      } 
+  }
+  file.close();
+  }
+
+
 }
 
 void serializeLong() {
