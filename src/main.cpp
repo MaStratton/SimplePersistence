@@ -4,6 +4,7 @@
 #include <fstream>
 #include <filesystem>
 #include <map>
+#include <chrono>
 
 using namespace std;
 
@@ -11,7 +12,6 @@ using namespace std;
 string dirPathShort = "./people/simple/";
 string dirPathLong = "./people/long/";
 string dirPathLongSer = "./people/longSerialized/";
-
 
 string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name\n8) Serialize Employees\n0) EXIT";
 map<string, Employee> IDMap;;
@@ -59,10 +59,15 @@ int main() {
 }
 
 void display(string dirPath) {
+  auto start = chrono::high_resolution_clock::now();
   for (auto& entry: filesystem::directory_iterator(dirPath)){
     const auto fileName = dirPath + entry.path().filename().string();
     cout << readInfo(fileName) << endl;
   }
+  auto finish = chrono::high_resolution_clock::now();
+  auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
 }
 
 void addFileLong(){
@@ -75,6 +80,7 @@ void addFileLong(){
     }
 
     if (!checkFileExistLong(id)) {
+      auto start = chrono::high_resolution_clock::now();
       info.push_back(id);
       getInfo(info);
       string fileName = "people/long/" + id + ".txt";
@@ -85,10 +91,16 @@ void addFileLong(){
       Employee employee(info[0], info[1], info[2], info[3]);
       IDMap.insert({employee.getID(), employee});
       lNameMap.insert({employee.getlName(), employee});
+      auto finish = chrono::high_resolution_clock::now();
+      auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
     } else {
       cout << "ID exists. To make changes use update function or type EXIT to cancle" << endl;
     }
   }
+
 }
 
 void deleteFileByID(){
@@ -104,11 +116,17 @@ void deleteFileByID(){
       cout << "ID Does not exists Try again or enter EXIT to cancle" << endl;
 
     } else {
+      auto start = chrono::high_resolution_clock::now();
       string filePath = dirPathLong + id + ".txt";
       remove(filePath.c_str());
       exit = true;
       lNameMap.erase( IDMap.at(id).getID());
       IDMap.erase(id);
+      auto finish = chrono::high_resolution_clock::now();
+      auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+      cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+      return;
     }
   }
 }
@@ -161,12 +179,17 @@ void updateByID(){
           cout << "Confirm Data(1/0)\n" + mkString(info) << endl;
           cin >> input;
           if (input == "1"){
+            auto start = chrono::high_resolution_clock::now();
             string fullPath = "people/long/" + id;
             ofstream output(fullPath);
             output << mkData(info);
             IDMap.at(id).update(info[1], info[2], info[3]);
             lNameMap.erase(info[2]);
             lNameMap.insert({info[2], IDMap.at(id)});
+            auto finish = chrono::high_resolution_clock::now();
+            auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+            cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
             return;
           }
         }
@@ -184,8 +207,14 @@ void searchByID(){
   if (!checkFileExistLong(id)) {
       cout << "ID does not exist" << endl;
   } else {
+    auto start = chrono::high_resolution_clock::now();
     id = dirPathLong + id + ".txt";
     cout << readInfo(id) << endl;
+    auto finish = chrono::high_resolution_clock::now();
+    auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+    cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
   }
 }
 
@@ -289,7 +318,13 @@ void indexDatabase(){
 void searchIDIndexbyID() {
   string id = getID("Enter ID to Find");
   try {
+    auto start = chrono::high_resolution_clock::now();
     cout << IDMap.at(id).toString() << endl;
+    auto finish = chrono::high_resolution_clock::now();
+    auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+    cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
   } catch (const std::out_of_range& e) {
     cout << "Entry Does Not Exits\n" << endl;;
   }
@@ -309,6 +344,7 @@ void searchByLname() {
 }
 
 void serializeLong() {
+  auto start = chrono::high_resolution_clock::now();
   for (auto record : IDMap) {
     string fileName = dirPathLongSer + record.second.getID() + ".bin";
     ofstream file(fileName, ios::out);
@@ -316,7 +352,11 @@ void serializeLong() {
     file.write(reinterpret_cast<char*>(&employee), sizeof(employee));
     file.close();
   }
-}
+  auto finish = chrono::high_resolution_clock::now();
+  auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
 
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
+}
 
 
