@@ -26,3 +26,9 @@ void deserialize();
 void searchIDIndexbyID();
 void searchByLname();
 void searchByLnameFile();
+
+void mongo();
+void dbAddFiles();
+void dbSearch();
+
+bool bdCheckIfExist(string ID);

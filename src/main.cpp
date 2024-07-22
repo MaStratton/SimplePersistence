@@ -3,17 +3,35 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <json/json.h>
+#include <json/value.h>
+#include <json/reader.h>
+#include <bsoncxx/builder/basic/document.hpp>
+#include <bsoncxx/json.hpp>
+#include <mongocxx/client.hpp>
+#include <mongocxx/uri.hpp>
+#include <mongocxx/instance.hpp>
+#include <mongocxx/stdx.hpp>
 #include <map>
 #include <chrono>
 
 using namespace std;
+using bsoncxx::builder::basic::kvp;
+using bsoncxx::builder::basic::make_array;
+using bsoncxx::builder::basic::make_document;
 
+mongocxx::instance instance{};
+mongocxx::client client{mongocxx::uri{"mongodb://localhost:27017"}};
+auto db = client["SimplePersistance"];
+auto collection = db["people"];
 
 string dirPathShort = "./people/simple/";
 string dirPathLong = "./people/long/";
 string dirPathLongSer = "./people/longSerialized/";
 
-string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n0) EXIT";
+string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n11) MongoDB Stuff\n0) EXIT";
+
+string mongoMenu = "1) Add Files to Collection\n2) Add new Document to collection\n3) Search By ID\n0)Top Menu";
 map<string, Employee> IDMap;;
 map<string, Employee> lNameMap;
 
@@ -59,10 +77,109 @@ int main() {
       case 10:
         deserialize();
         break;
+      case 11:
+        mongo();
+        break;
       default:
         break;
     }
   }
+  return 0;
+}
+
+void mongo(){
+  int cmd = 1;
+  while (cmd != 0){
+    cout << "Select MongoDB command" << endl;
+    cout << mongoMenu << endl;
+    cin >> cmd;
+
+    switch(cmd){
+      case 1:
+        dbAddFiles();
+        break;
+      case 2:
+        break;
+      case 3:
+        dbSearch();
+        break;
+    }
+
+  }
+
+}
+
+void dbAddFiles(){
+  for (auto record: IDMap){
+    string ID = record.second.getID();
+    string fName = record.second.getfName();
+    string lName = record.second.getlName();
+    string hireYear = record.second.getHireYear();
+    collection.insert_one(make_document(
+        kvp("ID", ID),
+        kvp("First Name", fName),
+        kvp("Last Name", lName),
+        kvp("Hire Year", hireYear)
+        )
+    );
+  }
+}
+
+
+void dbSearch(){
+  string ID = getID("Enter ID to Find");
+  if (bdCheckIfExist(ID)){
+    auto person = collection.find_one(make_document(kvp("ID", ID)));
+    auto personJsonStr = bsoncxx::to_json(person->view());
+    Json::Value personJson;
+    Json::Reader reader;
+    reader.parse(personJsonStr, personJson);
+    info.push_back((personJson["ID"].toStyledString().substr(1,personJson["ID"].toStyledString().size()-3)));
+    info.push_back((personJson["First Name"].toStyledString().substr(1,personJson["First Name"].toStyledString().size()-3)));
+    info.push_back((personJson["Last Name"].toStyledString().substr(1,personJson["Last Name"].toStyledString().size()-3)));
+    info.push_back((personJson["Hire Year"].toStyledString().substr(1,personJson["Hire Year"].toStyledString().size()-3)));
+    
+    cout << mkString(info) << endl;
+    info.clear();
+
+  }
+}
+
+bool bdCheckIfExist(string ID){
+  if(collection.find_one(make_document(kvp("ID", ID)))){
+    return true;
+  }
+  return false;
+}
+
+
+void getInfo(vector<string>& info){
+  bool confirm = 0;
+  string input;
+  while (!confirm){
+    int hireYear;
+    cout << "Enter First Name" << endl;
+    cin >> input;
+    input = capitalize(input);
+    info.push_back(input);
+    cout << "Enter Last Name" << endl;
+    cin >> input;
+    input = capitalize(input);
+    info.push_back(input);
+    cout << "Enter Hire Year" << endl;
+    cin >> hireYear;
+    input = to_string(hireYear);
+    info.push_back(input);
+    cout << "Confirm (1/0):\n" + mkString(info) << endl;
+    cin >> confirm;
+  }
+}
+
+string capitalize(string input) {
+  for (int i = 0; i < (int)input.length(); i++) {
+    input[i] = toupper(input[i]);
+  }
+  return input;
 }
 
 void display(string dirPath) {
@@ -75,6 +192,14 @@ void display(string dirPath) {
   auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
 
   cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+}
+
+string mkString(const vector<string>& chkInfo){
+  return ("ID: " + chkInfo[0] + "\nFirst Name: " + chkInfo[1] + "\nLast Name: " + chkInfo[2] + "\nHire Year: " + chkInfo[3]);
+}
+
+string mkData(const vector<string>& chkInfo){
+  return ("" + chkInfo[0] + ", " + chkInfo[1] + ", " + chkInfo[2] + ", " + chkInfo[3]);
 }
 
 void addFileLong(){
@@ -225,13 +350,6 @@ void searchByID(){
   }
 }
 
-string capitalize(string input) {
-  for (int i = 0; i < (int)input.length(); i++) {
-    input[i] = toupper(input[i]);
-  }
-  return input;
-}
-
 bool checkFileExistLong(string checkFile){
   for (auto& entry : filesystem::directory_iterator(dirPathLong)){
     const auto fileName = entry.path().filename().string();
@@ -263,37 +381,6 @@ string getID(string output) {
   string strReturn;
   cin >> strReturn;
   return strReturn;
-}
-
-string mkString(const vector<string>& chkInfo){
-  return ("ID: " + chkInfo[0] + "\nFirst Name: " + chkInfo[1] + "\nLast Name: " + chkInfo[2] + "\nHire Year: " + chkInfo[3]);
-}
-
-string mkData(const vector<string>& chkInfo){
-  return ("" + chkInfo[0] + ", " + chkInfo[1] + ", " + chkInfo[2] + ", " + chkInfo[3]);
-}
-
-
-void getInfo(vector<string>& info){
-  bool confirm = 0;
-  string input;
-  while (!confirm){
-    int hireYear;
-    cout << "Enter First Name" << endl;
-    cin >> input;
-    input = capitalize(input);
-    info.push_back(input);
-    cout << "Enter Last Name" << endl;
-    cin >> input;
-    input = capitalize(input);
-    info.push_back(input);
-    cout << "Enter Hire Year" << endl;
-    cin >> hireYear;
-    input = to_string(hireYear);
-    info.push_back(input);  
-    cout << "Confirm (1/0):\n" + mkString(info) << endl;
-    cin >> confirm;
-  }
 }
 
 void indexDatabase(){
@@ -355,6 +442,7 @@ void searchByLnameFile(){
   cout << "Enter Last Name to Find" << endl;
   cin >> lName;
   lName = capitalize(lName);
+  auto start = chrono::high_resolution_clock::now();
   for (auto& entry: filesystem::directory_iterator(dirPathLong)){
     const auto fileName = dirPathLong + entry.path().filename().string();
     ifstream file(fileName);
@@ -365,14 +453,19 @@ void searchByLnameFile(){
         getline(file, tempStr, ',');
         tempInfo.push_back(tempStr);
       }
+
       string templName = tempInfo[2].substr(1);
+
       if (lName == templName){
         cout << mkString(tempInfo) << endl;
       } 
-  }
+    }
   file.close();
   }
+  auto finish = chrono::high_resolution_clock::now();
+  auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
 
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
 
 }
 
@@ -388,8 +481,8 @@ void serializeLong() {
 }
 
 void deserialize(){
-    auto start = chrono::high_resolution_clock::now();
     string id = getID("Enter ID to find");
+    auto start = chrono::high_resolution_clock::now();
     Employee employee = Employee::deserialize(id);
     cout << employee.toString() << endl;
     auto finish = chrono::high_resolution_clock::now();
