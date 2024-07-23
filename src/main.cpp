@@ -31,7 +31,9 @@ string dirPathLongSer = "./people/longSerialized/";
 
 string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n11) MongoDB Stuff\n0) EXIT";
 
-string mongoMenu = "1) Add Files to Collection\n2) Add new Document to collection\n3) Search By ID\n0)Top Menu";
+string mongoMenu = "1) Add Files to Collection\n2) Search By ID\n3) Update Document\n4)Delete by ID\n0)Top Menu";
+
+
 map<string, Employee> IDMap;;
 map<string, Employee> lNameMap;
 
@@ -99,9 +101,18 @@ void mongo(){
         dbAddFiles();
         break;
       case 2:
+        dbSearch();
         break;
       case 3:
-        dbSearch();
+        dbUpdate();
+        break;
+      case 4:
+        dbDelete();
+        break;
+      case 0:
+        break;
+      default:
+        cout << "Invalid Command" << endl;
         break;
     }
 
@@ -124,11 +135,9 @@ void dbAddFiles(){
     );
   }
 }
-
-
 void dbSearch(){
   string ID = getID("Enter ID to Find");
-  if (bdCheckIfExist(ID)){
+  if (dbCheckIfExist(ID)){
     auto person = collection.find_one(make_document(kvp("ID", ID)));
     auto personJsonStr = bsoncxx::to_json(person->view());
     Json::Value personJson;
@@ -142,10 +151,78 @@ void dbSearch(){
     cout << mkString(info) << endl;
     info.clear();
 
+  } else {
+    cout << "ID Does Not Exist" << endl;
   }
 }
 
-bool bdCheckIfExist(string ID){
+
+void dbUpdate(){
+  string ID = getID("Enter ID to Find");
+  if(dbCheckIfExist(ID)){
+    int cmd = -1;
+    auto person = collection.find_one(make_document(kvp("ID", ID)));
+    auto personJsonStr = bsoncxx::to_json(person->view());
+    Json::Value personJson;
+    Json::Reader reader;
+    reader.parse(personJsonStr, personJson);
+    info.push_back((personJson["ID"].toStyledString().substr(1,personJson["ID"].toStyledString().size()-3)));
+    info.push_back((personJson["First Name"].toStyledString().substr(1,personJson["First Name"].toStyledString().size()-3)));
+    info.push_back((personJson["Last Name"].toStyledString().substr(1,personJson["Last Name"].toStyledString().size()-3)));
+    info.push_back((personJson["Hire Year"].toStyledString().substr(1,personJson["Hire Year"].toStyledString().size()-3)));
+    
+    cout << mkString(info) << endl;
+    string input = "";
+    while (cmd != 0){
+      cout << "What Data to re-write:\n1) First Name\n2) Last name\n3) Hire Year\n4) Write Changes" << endl;
+      cin >> cmd;
+      switch (cmd){
+        case 1:
+          cout << "Enter new First Name" << endl;
+          cin >> input;
+          input = capitalize(input);
+          info[1] = input;
+          break;
+        case 2:
+          cout << "Enter new Last Name" << endl;
+          cin >> input;
+          input = capitalize(input);
+          info[2] = input;
+          break;
+        case 3:
+          cout << "Enter new Hire Year" << endl;
+          cin >> input;
+          capitalize(input);
+          info[3] = input;
+          break;
+        case 4:{
+          cout << "Confirm Data(1/0)\n" + mkString(info) << endl;
+          cin >> input;
+          if (input == "1"){
+            collection.update_one(make_document(kvp("ID", info[0])), make_document(kvp("$set", make_document(kvp("First Name", info[1])))));
+            collection.update_one(make_document(kvp("ID", info[0])), make_document(kvp("$set", make_document(kvp("Last Name", info[2])))));
+            collection.update_one(make_document(kvp("ID", info[0])), make_document(kvp("$set", make_document(kvp("Hire Year", info[3])))));
+            info.clear();
+            return;
+          }
+        }
+      }
+    }
+  }
+}
+
+void dbDelete(){
+  string ID = getID("Enter ID to Delete");
+  if (dbCheckIfExist(ID)){
+    collection.delete_one(make_document(kvp("ID", ID)));
+    cout << "Document Deleted" << endl;
+  }
+}
+
+
+
+
+bool dbCheckIfExist(string ID){
   if(collection.find_one(make_document(kvp("ID", ID)))){
     return true;
   }

@@ -30,5 +30,7 @@ void searchByLnameFile();
 void mongo();
 void dbAddFiles();
 void dbSearch();
+void dbUpdate();
+void dbDelete();
 
-bool bdCheckIfExist(string ID);
+bool dbCheckIfExist(string ID);
