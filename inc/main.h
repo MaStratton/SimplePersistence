@@ -36,5 +36,12 @@ void dbDelete();
 
 void neo4j();
 void neoAddPeople();
+void neoAddOne();
+void neoAddRel();
+void neoUpdate();
+void neoFindOne();
+void neoDelOne();
+
+bool neoCheckID(string ID);
 
 bool dbCheckIfExist(string ID);

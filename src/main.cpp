@@ -33,7 +33,9 @@ string dirPathLongSer = "./people/longSerialized/";
 string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n11) MongoDB Stuff\n12) Neo4j\n0) EXIT";
 
 string mongoMenu = "1) Add Files to Collection\n2)Add One Person\n3) Search By ID\n4) Update Document\n5) Delete by ID\n0) Top Menu";
-string neo4jMenu = "1) Add all Indexed People\n2) Add File\n3) Search By ID\n4) Update by ID\n5) Delete by ID\n0) Top Menu";
+string neo4jMenu = "1) Add all Indexed People\n2) Add Person\n3) Add Relationship\n4) Search By ID\n5) Update by ID\n6) Delete by ID\n0) Top Menu";
+
+string neo4jExists = "exist\nTRUE\n";
 
 map<string, Employee> IDMap;;
 map<string, Employee> lNameMap;
@@ -245,9 +247,6 @@ void dbDelete(){
   }
 }
 
-
-
-
 bool dbCheckIfExist(string ID){
   if(collection.find_one(make_document(kvp("ID", ID)))){
     return true;
@@ -266,6 +265,21 @@ int cmd = 1;
         //neoAddPeople();
         cout << "I'M NOT DOING THIS FOR ANOTHER TWO HOURS" << endl;
         break;
+      case 2:
+        neoAddOne();
+        break;
+      case 3:
+        neoAddRel();
+        break;
+      case 4:
+        neoFindOne();
+        break;
+      case 5:
+        neoUpdate();
+        break;
+      case 6:
+        neoDelOne();
+        break;
       case 0:
         break;
     }
@@ -280,6 +294,69 @@ void neoAddPeople(){
   }
 }
 
+void neoAddOne(){
+  string ID = getID("Enter ID");
+  if (neoCheckID(ID)){
+    cout << "ID Exists" << endl;
+  } else {
+    info.push_back(ID);
+    getInfo(info);
+    string cmd = "./cypherScript/cypherAdd.sh " + info[0] + " " + info[1] + " " + info[2] + " " + info[3];
+    system(cmd.c_str());
+    info.clear();
+  }
+}
+
+void neoAddRel(){
+  cout << "The Relationship added will go both ways" << endl;
+  string IDpOne = getID("Enter ID for Person One");
+  string IDpTwo = getID("Enter ID for Person Two");
+  if (neoCheckID(IDpOne) && neoCheckID(IDpTwo)){
+    cout << "Enter Relationship" << endl;
+    string rel = "";
+    cin >> rel;
+    string cmdString = "./cypherScript/addRel.sh " + IDpOne + " " + IDpTwo + " " + rel;
+    system(cmdString.c_str());
+  } else {
+    cout << "One or both IDs do not exist or error has occured" << endl;
+  }
+}
+
+void neoUpdate(){
+
+}
+
+void neoFindOne(){
+  string ID = getID("Enter ID to Search");
+  string cmd = "./cypherScript/findOne.sh " + ID;
+  system(cmd.c_str());
+}
+
+void neoDelOne(){
+
+}
+
+bool neoCheckID(string ID){
+  char buffer[128];
+  string result = "";
+  string cmd = "./cypherScript/checkID.sh " + ID;
+  FILE* pipe = popen(cmd.c_str(), "r");
+  if (!pipe) {
+    cout << "Failed" << endl;
+    return false;
+  }
+
+  while (!feof(pipe)){
+    if (fgets(buffer, 128, pipe) != NULL){
+         result += buffer;
+   }
+  }
+  pclose(pipe);
+  if (result == neo4jExists){
+    return true;
+  }
+  return false;
+}
 
 void getInfo(vector<string>& info){
   bool confirm = 0;
