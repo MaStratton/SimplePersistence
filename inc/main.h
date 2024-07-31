@@ -29,8 +29,12 @@ void searchByLnameFile();
 
 void mongo();
 void dbAddFiles();
+void dbAddOne();
 void dbSearch();
 void dbUpdate();
 void dbDelete();
+
+void neo4j();
+void neoAddPeople();
 
 bool dbCheckIfExist(string ID);

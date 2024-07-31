@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <cstdlib>
 #include <json/json.h>
 #include <json/value.h>
 #include <json/reader.h>
@@ -29,10 +30,10 @@ string dirPathShort = "./people/simple/";
 string dirPathLong = "./people/long/";
 string dirPathLongSer = "./people/longSerialized/";
 
-string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n11) MongoDB Stuff\n0) EXIT";
+string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n11) MongoDB Stuff\n12) Neo4j\n0) EXIT";
 
-string mongoMenu = "1) Add Files to Collection\n2) Search By ID\n3) Update Document\n4)Delete by ID\n0)Top Menu";
-
+string mongoMenu = "1) Add Files to Collection\n2)Add One Person\n3) Search By ID\n4) Update Document\n5) Delete by ID\n0) Top Menu";
+string neo4jMenu = "1) Add all Indexed People\n2) Add File\n3) Search By ID\n4) Update by ID\n5) Delete by ID\n0) Top Menu";
 
 map<string, Employee> IDMap;;
 map<string, Employee> lNameMap;
@@ -82,6 +83,9 @@ int main() {
       case 11:
         mongo();
         break;
+      case 12:
+        neo4j();
+        break;
       default:
         break;
     }
@@ -101,12 +105,15 @@ void mongo(){
         dbAddFiles();
         break;
       case 2:
-        dbSearch();
+        dbAddOne();
         break;
       case 3:
-        dbUpdate();
+        dbSearch();
         break;
       case 4:
+        dbUpdate();
+        break;
+      case 5:
         dbDelete();
         break;
       case 0:
@@ -135,6 +142,25 @@ void dbAddFiles(){
     );
   }
 }
+
+void dbAddOne(){
+  string ID = getID("Enter New ID");
+  if (!dbCheckIfExist(ID)){
+    info.push_back(ID);
+    getInfo(info);
+    collection.insert_one(
+        make_document(
+          kvp("ID", ID),
+          kvp("First Name", info[1]),
+          kvp("Last Name", info[2]),
+          kvp("Hire Year", info[3])
+        )
+      );
+  } else {
+    cout << "ID Exists" << endl;
+  }
+}
+
 void dbSearch(){
   string ID = getID("Enter ID to Find");
   if (dbCheckIfExist(ID)){
@@ -227,6 +253,31 @@ bool dbCheckIfExist(string ID){
     return true;
   }
   return false;
+}
+
+void neo4j(){
+int cmd = 1;
+  while (cmd != 0){
+    cout << "Select Neo4j command" << endl;
+    cout << neo4jMenu << endl;
+    cin >> cmd;
+    switch (cmd){
+      case 1:
+        //neoAddPeople();
+        cout << "I'M NOT DOING THIS FOR ANOTHER TWO HOURS" << endl;
+        break;
+      case 0:
+        break;
+    }
+  }
+}
+
+void neoAddPeople(){
+  for (auto record : IDMap){
+    string cmdString = "./cypherScript/cypherAdd.sh " + record.second.getID()+ " " + record.second.getfName()+ " " + record.second.getlName()+ " " + record.second.getHireYear();
+    const char* cmdStringC = cmdString.c_str();
+    system(cmdStringC);
+  }
 }
 
 
