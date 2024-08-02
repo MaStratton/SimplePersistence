@@ -158,6 +158,7 @@ void dbAddOne(){
           kvp("Hire Year", info[3])
         )
       );
+    info.clear();
   } else {
     cout << "ID Exists" << endl;
   }
@@ -323,17 +324,29 @@ void neoAddRel(){
 }
 
 void neoUpdate(){
-
+  string ID = getID("Enter ID to Update");
+  if (neoCheckID(ID)){
+    info.push_back(ID);
+    cout << "Due to limitations of neo4J, Please enter all info for the person under this ID repeating what needs to be unchanged and changing what needs to be changed" << endl;
+    getInfo(info);
+    string cmd = "./cypherScript/updateOne.sh " + info[0] + " " + info[1] + " " + info[2] + " " + info[3];
+    system(cmd.c_str());
+    info.clear();
+  }
 }
 
 void neoFindOne(){
   string ID = getID("Enter ID to Search");
-  string cmd = "./cypherScript/findOne.sh " + ID;
-  system(cmd.c_str());
+  string sysCmd = "./cypherScript/findOne.sh " + ID;
+  system(sysCmd.c_str());
 }
 
 void neoDelOne(){
-
+  string ID = getID("Enter ID to Delete");
+  if (neoCheckID(ID)){
+    string cmd = "./cypherScript/deleteOne.sh " + ID;
+    system(cmd.c_str());
+  }
 }
 
 bool neoCheckID(string ID){
