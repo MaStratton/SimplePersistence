@@ -289,7 +289,7 @@ int cmd = 1;
 
 void neoAddPeople(){
   for (auto record : IDMap){
-    string cmdString = "./cypherScript/cypherAdd.sh " + record.second.getID()+ " " + record.second.getfName()+ " " + record.second.getlName()+ " " + record.second.getHireYear();
+    string cmdString = "./cypherScript/add.sh " + record.second.getID()+ " " + record.second.getfName()+ " " + record.second.getlName()+ " " + record.second.getHireYear();
     const char* cmdStringC = cmdString.c_str();
     system(cmdStringC);
   }
@@ -302,9 +302,15 @@ void neoAddOne(){
   } else {
     info.push_back(ID);
     getInfo(info);
-    string cmd = "./cypherScript/cypherAdd.sh " + info[0] + " " + info[1] + " " + info[2] + " " + info[3];
+
+    auto start = chrono::high_resolution_clock::now();
+    string cmd = "./cypherScript/add.sh " + info[0] + " " + info[1] + " " + info[2] + " " + info[3];
     system(cmd.c_str());
     info.clear();
+
+    auto finish = chrono::high_resolution_clock::now();
+    auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+    cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
   }
 }
 
@@ -316,8 +322,15 @@ void neoAddRel(){
     cout << "Enter Relationship" << endl;
     string rel = "";
     cin >> rel;
+
+    auto start = chrono::high_resolution_clock::now();
     string cmdString = "./cypherScript/addRel.sh " + IDpOne + " " + IDpTwo + " " + rel;
     system(cmdString.c_str());
+
+    auto finish = chrono::high_resolution_clock::now();
+    auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+    cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
   } else {
     cout << "One or both IDs do not exist or error has occured" << endl;
   }
@@ -329,23 +342,43 @@ void neoUpdate(){
     info.push_back(ID);
     cout << "Due to limitations of neo4J, Please enter all info for the person under this ID repeating what needs to be unchanged and changing what needs to be changed" << endl;
     getInfo(info);
+
+    auto start = chrono::high_resolution_clock::now();
     string cmd = "./cypherScript/updateOne.sh " + info[0] + " " + info[1] + " " + info[2] + " " + info[3];
     system(cmd.c_str());
     info.clear();
+    auto finish = chrono::high_resolution_clock::now();
+    auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+    cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
   }
 }
 
 void neoFindOne(){
   string ID = getID("Enter ID to Search");
+
+  auto start = chrono::high_resolution_clock::now();
   string sysCmd = "./cypherScript/findOne.sh " + ID;
   system(sysCmd.c_str());
+
+  auto finish = chrono::high_resolution_clock::now();
+  auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
 }
 
 void neoDelOne(){
   string ID = getID("Enter ID to Delete");
   if (neoCheckID(ID)){
+
+    auto start = chrono::high_resolution_clock::now();
     string cmd = "./cypherScript/deleteOne.sh " + ID;
     system(cmd.c_str());
+
+    auto finish = chrono::high_resolution_clock::now();
+    auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+    cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
   }
 }
 
