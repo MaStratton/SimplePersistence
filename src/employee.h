@@ -1,6 +1,6 @@
 #pragma once
-#include "../inc/main.h"
-#include <string>
+#include "main.h"
+
 #include <fstream>
 #include <iostream>
 

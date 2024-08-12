@@ -1,5 +1,4 @@
-#include "../inc/employee.h"
-#include <fstream>
+#include "main.h"
 
 using namespace std;
 
