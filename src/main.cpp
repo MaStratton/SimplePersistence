@@ -2,6 +2,7 @@
 #include "../inc/employee.h"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <filesystem>
 #include <cstdlib>
 #include <json/json.h>
@@ -13,6 +14,7 @@
 #include <mongocxx/uri.hpp>
 #include <mongocxx/instance.hpp>
 #include <mongocxx/stdx.hpp>
+#include <hiredis/hiredis.h>
 #include <map>
 #include <chrono>
 
@@ -30,10 +32,11 @@ string dirPathShort = "./people/simple/";
 string dirPathLong = "./people/long/";
 string dirPathLongSer = "./people/longSerialized/";
 
-string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n11) MongoDB Stuff\n12) Neo4j\n0) EXIT";
+string menu = "1) Display \n2) Add File\n3) Delete File by ID\n4) Update by ID\n5) Search by ID(File System Search)\n6) Search by ID (Memory Search)\n7) Search by Last Name(Memory Search)\n8) Search By Last Name (File Search)\n9) Serialize Employees\n10) Search Serialized Files\n11) MongoDB Stuff\n12) Neo4j\n13) Redis\n0) EXIT";
 
-string mongoMenu = "1) Add Files to Collection\n2)Add One Person\n3) Search By ID\n4) Update Document\n5) Delete by ID\n0) Top Menu";
+string mongoMenu = "1) Add Files to Collection\n2) Add One Person\n3) Search By ID\n4) Update Document\n5) Delete by ID\n0) Top Menu";
 string neo4jMenu = "1) Add all Indexed People\n2) Add Person\n3) Add Relationship\n4) Search By ID\n5) Update by ID\n6) Delete by ID\n0) Top Menu";
+string redisMenu = "1) Add all Indexed People\n2) Add Person\n3) Search by ID\n4) Update by ID\n5) Delete by ID\n0) Top Menu";
 
 string neo4jExists = "exist\nTRUE\n";
 
@@ -42,9 +45,18 @@ map<string, Employee> lNameMap;
 
 vector<string> info;
 Employee employeeSize;
+redisContext *c = redisConnect("127.0.0.1", 6379);
+
 
 int main() {
   indexDatabase();
+
+  if (c != NULL && c->err){
+    cout << "\033[1;31m" << endl;
+    cout << "REDIS CONNECTION ERROR" << endl;
+    cout << "\033[0m" << endl;
+  }
+
   int cmd = -1;
   while (cmd != 0){
     cout << "select Command" << endl;
@@ -87,6 +99,11 @@ int main() {
         break;
       case 12:
         neo4j();
+        break;
+      case 13:
+        redis();
+        break;
+      case 0:
         break;
       default:
         break;
@@ -402,6 +419,189 @@ bool neoCheckID(string ID){
     return true;
   }
   return false;
+}
+
+void redis(){
+  int cmd = 1;
+  while (cmd != 0){
+    cout << "Select Redis command" << endl;
+    cout << redisMenu << endl;
+    cin >> cmd;
+    switch (cmd){
+      case 1:
+        redisAddPeople();
+        break;
+      case 2:
+        redisAddOne();
+        break;
+      case 3:
+        redisSearch();
+        break;
+      case 4:
+        redisUpdate();
+        break;
+      case 5:
+        redisDelete();
+        break;
+      case 0:
+        redisEmpty();
+        redisFree(c);
+        break;
+    }
+  }
+}
+
+void redisAddPeople(){
+  for (auto record : IDMap){
+    string ID = record.second.getID();
+    string person = record.second.getfName() + "," + record.second.getlName()+"," + record.second.getHireYear();
+    string cmd = "SET " + ID + " " + person;
+    const char* cCmd = cmd.c_str();
+    redisReply *reply;
+    reply = redisCommand(c, cCmd);
+    freeReplyObject(reply);
+  }
+}
+
+void redisAddOne(){
+  string ID;
+  ID = getID("Enter ID to add");
+  if (!redisCheckExist(ID)){
+    vector<string> info;
+    info.push_back(ID);
+    getInfo(info);
+    string cmd = "SET " + info[0] + " " + info[1] + "," + info[2] + "," + info[3];
+    const char* cCmd = cmd.c_str();
+    redisReply *reply;
+    reply = redisCommand(c, cCmd);
+    freeReplyObject(reply);
+  } else {
+    cout << "ID EXISTS" <<endl;
+  }
+}
+
+void redisSearch(){
+  string ID;
+  ID = getID("Enter ID to find");
+  if (redisCheckExist(ID)){
+    string cmd = "GET " + ID;
+    const char* cCmd = cmd.c_str();
+    redisReply *reply;
+    reply = redisCommand(c, cCmd);
+    string person = ID + "," + reply->str;
+    freeReplyObject(reply);
+    
+    cout << mkString(redisMkVector(person)) << endl;
+  } else {
+    cout << "ID Does not Exist" << endl;
+  }
+  
+}
+
+void redisUpdate(){
+  string ID;
+  ID = getID("Enter ID to Update");
+  if (redisCheckExist(ID)){
+    string cmd = "GET " + ID;
+    const char* cCmd = cmd.c_str();
+    redisReply *reply;
+    reply = redisCommand(c, cCmd);
+    string person = ID + "," + reply->str;
+    freeReplyObject(reply);
+
+
+    vector<string> info = redisMkVector(person);
+    cout << mkString(info);
+
+    int updateCmd;
+    string input;
+    bool updating = true;
+    while (updating){
+      cout << "What Data to re-write:\n1) First Name\n2) Last name\n3) Hire Year\n4) Write Changes" << endl;
+      cin >> updateCmd;
+      switch (updateCmd){
+        case 1:
+          cout << "Enter new First Name" << endl;
+          cin >> input;
+          input = capitalize(input);
+          info[1] = input;
+          break;
+        case 2:
+          cout << "Enter new Last Name" << endl;
+          cin >> input;
+          input = capitalize(input);
+          info[2] = input;
+          break;
+        case 3:
+          cout << "Enter new Hire Year" << endl;
+          cin >> input;
+          capitalize(input);
+          info[3] = input;
+          break;
+        case 4:{
+          cout << "Confirm Data(1/0)\n" + mkString(info) << endl;
+          cin >> input;
+          if (input == "1"){
+            updating = false;
+            cmd = "SET " + info[0] + " " + info[1] + "," + info[2] + "," + info[3];
+            cCmd = cmd.c_str();
+            cout << cmd << endl;
+
+            reply = redisCommand(c, cCmd);
+            freeReplyObject(reply);
+          }
+               }
+      }
+    }
+  } else {
+    cout << "ID DOES NOT EXIST" << endl;
+  }
+
+}
+
+void redisDelete(){
+  string ID;
+  ID = getID("Enter ID to Delete");
+  if (redisCheckExist(ID)){
+    string cmd = "DEL " + ID;
+    const char* cCmd = cmd.c_str();
+    redisReply *reply;
+    reply = redisCommand(c, cCmd);
+    freeReplyObject(reply);
+  } else {
+    cout << "ID DOES NOT EXIST" << endl;
+  }
+}
+void redisEmpty(){
+  redisReply *reply;
+  reply = redisCommand(c, "FLUSHALL");
+  freeReplyObject(reply);
+}
+
+vector<string> redisMkVector(string person){
+  vector<string> info;
+    stringstream streamPerson(person);
+    
+    while (streamPerson.good()){
+      string tempStr;
+      getline(streamPerson, tempStr, ',');
+      info.push_back(tempStr);
+    }
+  return info;
+}
+
+bool redisCheckExist(string ID){
+  string cmd = "GET " + ID;
+  const char* cCmd = cmd.c_str();
+
+  redisReply *reply;
+  reply = redisCommand(c, cCmd);
+  if (reply->str == NULL){
+   freeReplyObject(reply);
+    return false;
+  }
+  freeReplyObject(reply);
+  return true;
 }
 
 void getInfo(vector<string>& info){

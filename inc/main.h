@@ -33,6 +33,7 @@ void dbAddOne();
 void dbSearch();
 void dbUpdate();
 void dbDelete();
+bool dbCheckIfExist(string ID);
 
 void neo4j();
 void neoAddPeople();
@@ -41,7 +42,14 @@ void neoAddRel();
 void neoUpdate();
 void neoFindOne();
 void neoDelOne();
-
 bool neoCheckID(string ID);
 
-bool dbCheckIfExist(string ID);
+void redis();
+void redisAddPeople();
+void redisAddOne();
+void redisSearch();
+void redisUpdate();
+void redisDelete();
+void redisEmpty();
+vector<string> redisMkVector(string person);
+bool redisCheckExist(string ID);
