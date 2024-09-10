@@ -49,7 +49,12 @@ redisContext *c = redisConnect("127.0.0.1", 6379);
 
 
 int main() {
+  auto start = chrono::high_resolution_clock::now();
   indexDatabase();
+  auto finish = chrono::high_resolution_clock::now();
+  auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
+
 
   if (c != NULL && c->err){
     cout << "\033[1;31m" << endl;
@@ -452,6 +457,7 @@ void redis(){
 }
 
 void redisAddPeople(){
+  auto start = chrono::high_resolution_clock::now();
   for (auto record : IDMap){
     string ID = record.second.getID();
     string person = record.second.getfName() + "," + record.second.getlName()+"," + record.second.getHireYear();
@@ -461,6 +467,11 @@ void redisAddPeople(){
     reply = redisCommand(c, cCmd);
     freeReplyObject(reply);
   }
+
+  auto finish = chrono::high_resolution_clock::now();
+  auto microseconds = chrono::duration_cast<chrono::microseconds>(finish - start);
+
+  cout << (double)microseconds.count() / 1000000 << "Seconds"<< endl;
 }
 
 void redisAddOne(){
@@ -511,7 +522,7 @@ void redisUpdate(){
 
 
     vector<string> info = redisMkVector(person);
-    cout << mkString(info);
+    cout << mkString(info) << endl;
 
     int updateCmd;
     string input;
